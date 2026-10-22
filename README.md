@@ -68,12 +68,16 @@
 
 ## 🚀 快速开始
 
+### 方式一：下载安装包（推荐）
+
+前往 [Releases](https://github.com/Mine1178/SealMaker/releases/latest) 下载最新版安装包，双击安装即可使用，无需配置 Python 环境。
+
 ### 环境要求
 - **OS**：Windows 10 / 11
-- **Python**：3.10 及以上
+- **Python**：3.10 及以上（仅源码运行需要）
 - **依赖**：`Pillow`、`numpy`
 
-### 从源码运行
+### 方式二：从源码运行
 
 ```bash
 # 1. 克隆仓库
@@ -113,7 +117,7 @@ python SealMaker_v1.3.0.py
   <img src="https://img.shields.io/badge/Pillow-Image-3776AB?logo=python&logoColor=white">
   <img src="https://img.shields.io/badge/NumPy-Data-013243?logo=numpy&logoColor=white">
   <img src="https://img.shields.io/badge/PyInstaller-Build-F04E23?logo=python&logoColor=white">
-  <img src="https://img.shields.io/badge/Nuitka-Compile-4A9?logoColor=white">
+  <img src="https://img.shields.io/badge/Nuitka-Compile-4A90D9?logoColor=white">
   <img src="https://img.shields.io/badge/Inno%20Setup-Installer-0078D4">
 </p>
 
