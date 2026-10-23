@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D4?logo=windows&logoColor=white" alt="Windows">
   <img src="https://img.shields.io/badge/Export-508%20DPI-red" alt="DPI">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/badge/Version-v1.3.0-orange" alt="Version">
+  <img src="https://img.shields.io/github/v/release/Mine1178/SealMaker?logo=github" alt="Release">
 </p>
 
 <img src="images/main-window.png" alt="软件主界面" width="850"/>
@@ -30,6 +30,7 @@
 - [🚀 快速开始](#-快速开始)
 - [🎯 使用流程](#-使用流程)
 - [🛠️ 技术栈](#️-技术栈)
+- [❓ 常见问题](#-常见问题)
 - [🗺️ Roadmap](#️-roadmap)
 - [⚠️ 免责声明](#️-免责声明)
 - [☕ 支持我](#-支持我)
@@ -52,6 +53,8 @@
 
 </div>
 
+> 适用场景：设计演示、教学课件、手账素材、合同 / 报告排版中的占位印章素材、电子文档批注演示。
+
 ---
 
 ## 📸 效果展示
@@ -61,6 +64,8 @@
 | 圆形合同专用章 | 椭圆发票专用章 |
 |:---:|:---:|
 | <img src="images/circle-seal.png" width="400"> | <img src="images/ellipse-invoice.png" width="400"> |
+| 长公司名自适应缩字 | 短公司名窄椭圆章 |
+| <img src="images/ellipse-long-name.png" width="400"> | <img src="images/ellipse-short-name.png" width="400"> |
 
 </div>
 
@@ -125,9 +130,28 @@ python SealMaker_v1.3.0.py
 
 ---
 
+## ❓ 常见问题
+
+**Q：导出的 PNG 插入 Word 后尺寸对吗？**
+A：导出文件按 508 DPI 写入毫米级尺寸信息，在 Word / WPS 中按原始尺寸插入即为真实章面大小，缩放时注意保持纵横比。
+
+**Q：软件需要联网吗？**
+A：不需要。印章生成全程在本地完成，不上传公司名称、备案号等任何输入内容，可离线使用。
+
+**Q：公司名字很长会不会排成一圈挤不下？**
+A：长公司名会自动缩小字号并调整环排角度，配合字符旋转阻尼避免重叠与首尾倒立；短名称则按窄椭圆 / 小直径自适应排版。
+
+**Q：生成的章可以直接盖在正式合同上吗？**
+A：不可以。本工具产出的是电子素材图，仅供演示、教学、设计与手账等合法用途；真实公章、财务章、发票章必须到公安机关备案点刻制，详见下方免责声明。
+
+**Q：支持方形章、五角星章或其他形状吗？**
+A：当前版本仅提供圆形章与椭圆发票章；方形章、菱形章等已列入 Roadmap，尚未发布。
+
+---
+
 ## 🗺️ Roadmap
 
-- [x] v1.3.0 — 椭圆章弧排引擎重写，修复字符重叠/压边/首尾倒立
+- [x] v1.3.0 — 椭圆章弧排引擎重写，修复字符重叠 / 压边 / 首尾倒立
 - [ ] v1.4.0 — 支持自定义章面底色、多色章
 - [ ] v1.5.0 — 批量生成（Excel 名单一键出章）
 - [ ] v1.6.0 — 方形章 / 菱形章支持
