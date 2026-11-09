@@ -197,10 +197,12 @@ A：当前版本仅提供圆形章与椭圆发票章；方形章、菱形章等�
 
 两个版本**功能完全一致**（同一份源码、同一个自包含 exe），仅分发与系统集成方式不同：
 
-| 版本 | 文件 | 构建配置 | 系统集成 |
+| 版本 | 下载文件 | 构建配置 | 系统集成 |
 |---|---|---|---|
-| **免安装便携版** | `印章大师_v1.6.0_免安装版.zip` | `SealMaker_v1.6.0.spec`（PyInstaller onefile） | 解压即用，不写系统目录 / 注册表 |
-| **标准安装版** | `印章大师_v1.6.0_安装版.exe` | `打包/SealMaker_tool.iss`（Inno Setup 6） | 开始菜单 + 桌面快捷方式 + 卸载项 |
+| **免安装便携版** | `SealMaker_v1.6.0_portable.zip` | `SealMaker_v1.6.0.spec`（PyInstaller onefile） | 解压即用，不写系统目录 / 注册表 |
+| **标准安装版** | `SealMaker_v1.6.0_setup.exe` | `打包/SealMaker_tool.iss`（Inno Setup 6） | 开始菜单 + 桌面快捷方式 + 卸载项 |
+
+> 安装包见 [Releases](https://github.com/Mine1178/SealMaker/releases/latest) 页面下载。
 
 体积已精简：移除 `pymupdf.mupdf-devel`（C++ 开发库，~6.8MB）与 `PIL._avif`（AVIF 解码器，~7.9MB）等冗余，并排除所有无关重型包（matplotlib/scipy/pandas/Qt/Jupyter/setuptools…）。
 载荷 exe **60.5MB → 52.6MB**。PyMuPDF（签章核心）与 NumPy（仿真印章算法必需）为不可移除的刚需，详见 `打包指令集.txt`。
