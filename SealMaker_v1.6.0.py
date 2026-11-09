@@ -1,8 +1,76 @@
 # -*- coding: utf-8 -*-
 """
-标准电子印章生成工具（圆形章 / 椭圆形章，边线防伪纹精确版）
-版本：v1.3.0
-更新内容（基于 v1.2.0 椭圆章专项深度测评重写弧排引擎）：
+标准电子印章生成工具 + PDF 签章一体化工作台
+版本：v1.6.0（界面细节打磨 + 全量功能复核 + 代码清理 + 双版本打包）
+更新内容（v1.6.0，基于 v1.5.0）：
+  - 界面：保持默认窗口尺寸与整体布局不变，统一间距 / 对齐 / 配色 / 字体层级
+          与文本符号；「恢复默认」并入主题色系，下拉预置名不再截断；
+          预览空状态改为纸面示意 + 单一提示，去掉画布与信息条的重复文案。
+  - 反馈：正文文字复制后状态栏即时回显；章源缺失时按当前来源给出可操作引导；
+          按钮悬停 / 禁用态与滑块 / 单选 / 复选样式统一。
+  - 复核：逐一验证全部按钮联动、设置参数实际生效与预览/成品一致性
+          （定点 / 骑缝 / 固定角度 / 区间随机角度 / 指定页码 / 批量）。
+  - 清理：移除死代码、未使用导入与重复逻辑；打包显式排除非必要依赖。
+  - 交付：同步 spec / Inno Setup / README / 依赖清单，产出安装版与免安装版。
+历史版本 v1.5.0（重大更新：印章生成 → PDF 签章全链路打通）：
+  - 新增：PDF 签章工作台（pdf_stamper.py），借鉴「PDF全能工具箱 v10.0.43」的
+          定点 / 骑缝签章算法，支持多选 PDF 批量处理、页码范围、预览与另存。
+  - 新增：印章生成与签章无缝衔接 —— 设计页渲染出的 RGBA 印章直接以内存对象送入
+          签章页（无需先导出 PNG），并把印章物理毫米尺寸同步为签章大小默认值；
+          也可随时切换为本地透明 PNG 作为章源。
+  - 新增：签章页右栏「所见即所得」实时预览，与正式签章共用同一套坐标 / 切片计算。
+  - 改进：去掉参考实现的 `mm+3` 经验补偿，改用精确 mm→pt，与 508 DPI 导出一致；
+          去白底只在整图完全不透明时执行；旋转页用 derotation_matrix 校正坐标；
+          后台线程仅通过 queue 回传消息，全部 Tk 调用留在主线程。
+  - 重排：顶栏增加「印章设计 / PDF 签章」工作区切换与三步工作流指示条；
+          设计页保持三栏；签章页改为「左栏设置 / 右栏预览」双栏 ——
+          左栏依次放印章来源、待签 PDF、模式与范围、当前模式参数（可纵向滚动），
+          右栏为整页级实时预览，底部一张全宽动作卡；所有说明文案压成单行。
+  - 预览：取消「预览效果」按钮与独立弹窗；右栏预览随设置 140ms 防抖实时刷新，
+          PDF 页面底图按文件缓存，仅参数变化时重做 PIL 合成；未选 PDF 时以空白
+          A4 示意，横 / 纵方向直接取自 PDF 页面，与文档保持一致。
+  - 新增：印章角度参数 —— 「固定角度」(-180~180°) 与「区间随机」（每页独立角度、
+          可复现种子 + 「换一组」重掷）两种模式；骑缝章因需跨页拼回完整印章，
+          强制只支持固定角度、区间随机选项禁用；任意角度在 PIL 层预旋转实现，
+          预览与成品共用 resolve_page_angle / rotate_stamp / angle_rect。
+  - 细节：孤行控制 —— 参数说明紧跟末行滑块并整体垂直居中，不再沉底分离；
+          预览纸张加留白与轻阴影、空白页改用简洁文档版式；空文件列表居中占位提示；
+          卡片编号连续、状态文字精简，状态栏与动作卡不再重复长串文字。
+  - 对齐：设计页「样式设置」顶部两行改用统一 grid 列，标签 / 下拉框上下严格对齐；
+          「恢复默认」按钮跨两行垂直居中，不再悬挂在第二行末尾。
+  - 视觉：设计页三栏统一「标题贴顶、同一基线」，撤销栏内整体居中（居中会把
+          标题一起推到栏中部，破坏并列栏对齐）；右栏预览框撑满但印章图像
+          限幅 340px 居中，避免放大到压过左 / 中栏的小字控件。
+  - 视觉：签章页卡片间距固定 6px、其余卡片保持内容自然高度；参数说明移到
+          标题栏右侧（省一行、减少滚动量），滚动条按需显示；
+          「换一组」仅随机模式出现，动作卡去掉与状态栏重复的引擎文字。
+  - 全屏：② 待签章 PDF 文件区成为唯一弹性卡片，吸收全部富余高度——文件列表
+          随窗口放大、可显示更多文件，左栏从上到下铺满并与右栏等高；
+          富余不再留在内容末尾形成大片空白，也不注入卡片之间推散设置区。
+  - 交互：文字选择改为按区域区分，移除全局右键「复制文字 / 选取文字…」弹窗。
+          可选中「正文内容」＝状态栏信息、印章规格与参数摘要、说明文字、
+          空状态提示、文件列表行，以及所有输入框：用无痕只读文本框
+          (SelectableLabel) 承载，支持左键拖选、Ctrl+C、右键「复制 / 全选」。
+          不可选中「控件文字」＝所有按钮、卡片与分区标题、字段名 / 单位 /
+          选项名、单选复选文字、品牌与导航，保持原控件且无任何复制绑定；
+          文本光标 xterm 与按钮手型 hand2 形成可见区分。
+  - 响应式：设计页三栏面板按「内容自然高度」整体垂直居中，富余高度转为
+          上下对称留白以消除全屏头重脚轻；标题基线、控件尺寸与行距恒定。
+  - 修复：取消面板固定 620px 高度与关闭尺寸传播 —— 该写法会在字体 / DPI
+          稍大的环境里把中栏末尾参数行（边框宽度 / 公司名弧度）静默裁掉。
+          现在三栏取最高一栏的自然高度，任何窗口与缩放比例下都完整显示。
+  - 间距：参数滑块行 pady 3→5、表单行 2→4，中栏行中心距约 37px，
+          参数区不再拥挤，面板自然变高、预览区同步舒展。
+  - 窗口：启动默认尺寸按宽度 ×1.20、高度 ×1.30 放大并钳制到屏幕内
+          （1440×900 屏 → 1416×836；1920×1080 屏 → 1896×1016；
+          2560×1440 屏 → 2160×1144）；最小尺寸随屏幕自适应。
+  - 依赖：新增可选组件 PyMuPDF（pymupdf），缺失时签章页给出安装提示，印章生成不受影响。
+  - 说明：本功能为「可见印章图像叠加」，不含数字证书 / PAdES 数字签名，不具备法律效力。
+历史版本 v1.4.0（基于 v1.3.0 修复与增强）：
+  - 修复：椭圆章两端字倒立、备案号左右截断、税号上下削平、圆形章"备案号弧度"滑块失效。
+  - 新增：赞助按钮（sponsor_widget.py + assets 双码图）。
+  - 调整：默认窗口 1800×880（小屏自动收缩防超界）。
+历史版本 v1.3.0（基于 v1.2.0 椭圆章专项深度测评重写弧排引擎）：
   - 修复：**"公司名弧度"滑块近乎失效** —— 旧弧排步距被"字宽×1.04"钳住、与弧长解耦，
           默认参数下 180°/230°/260° 渲染出的字心距完全相同（像素级一致）。
           重写为"按请求夹角等弧长铺满"，夹角调节真实生效（自检 180°≠220°≠260°）。
@@ -61,6 +129,8 @@ import tkinter as tk
 from datetime import datetime
 from tkinter import ttk, filedialog, messagebox
 
+from ui_widgets import SelectableLabel, BigCheckbutton
+
 try:
     import numpy as np
     from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageTk
@@ -77,9 +147,19 @@ try:
 except Exception:
     _SPONSOR_OK = False
 
+# PDF 签章工作台（算法与 UI 见 pdf_stamper.py；PyMuPDF 缺失时仍可正常生成印章）
+try:
+    from pdf_stamper import StampWorkspace, PDF_ENGINE_OK, PDF_ENGINE_NAME
+    _STAMP_OK = True
+except Exception as _stamp_import_err:
+    StampWorkspace = None
+    PDF_ENGINE_OK, PDF_ENGINE_NAME = False, "未安装"
+    _STAMP_OK = False
+    print(f"[签章模块加载失败] {_stamp_import_err}")
+
 # ─────────────────────────── 配置层 ───────────────────────────
 EXPIRE_DATE = datetime(2028, 1, 1)
-APP_VERSION = "v1.3.0"
+APP_VERSION = "v1.6.0"
 
 if _DEPS_OK:
     _RES = getattr(Image, "Resampling", None)
@@ -1043,6 +1123,7 @@ class RoundedButton(tk.Canvas):
         self._font = font
         self._radius = radius
         self._cur = bg
+        self._enabled = True
         probe = tk.Label(parent, text=text, font=font)
         tw, th = probe.winfo_reqwidth(), probe.winfo_reqheight()
         probe.destroy()
@@ -1064,33 +1145,80 @@ class RoundedButton(tk.Canvas):
         self.create_polygon(pts, smooth=True, fill=fill, outline="")
         self.create_text(w / 2, h / 2, text=self._text, fill=self._fg, font=self._font)
 
+    def set_text(self, text):
+        """运行时改按钮文案（签章页用于『开始签章 / 停止签章』切换）"""
+        self._text = text
+        self._draw(self._cur)
+
+    def set_enabled(self, on):
+        """禁用期间保留视觉反馈但不触发命令"""
+        self._enabled = bool(on)
+        self.configure(cursor="hand2" if on else "arrow")
+        self._draw(self._bg if on else "#d8dde6")
+
     def _on_enter(self, e):
-        self._draw(self._hover_bg)
+        if self._enabled:
+            self._draw(self._hover_bg)
 
     def _on_leave(self, e):
-        self._draw(self._bg)
+        if self._enabled:
+            self._draw(self._bg)
 
     def _on_click(self, e):
-        self._command()
+        if self._enabled:
+            self._command()
+
+
+# 正文可选文本构件统一由 ui_widgets 提供（与签章页共用同一实现）：
+# 可选中正文 = SelectableLabel / 输入框 / 文件列表行；
+# 不可选中控件文字 = 按钮 / 标题 / 字段名 / 单位 / 选项名 / 品牌导航。
 
 
 class SealUI:
     # 关闭仿真后仍生效的参数（防伪纹属于几何特征，不依赖仿真）
     _SIM_ONLY_KEYS = ("sim_noise", "sim_blur", "sim_break")
 
-    def __init__(self, root, on_change, on_download, on_reset):
+    def __init__(self, root, on_change, on_download, on_reset, on_goto_sign):
         self.root = root
         self.on_change = on_change
         self.on_download = on_download
         self.on_reset = on_reset
+        self.on_goto_sign = on_goto_sign
+        self.on_page_change = None          # 由主应用注入：切换工作区时刷新签章页
+        SelectableLabel.on_copy = self.set_status   # 正文复制后状态栏即时反馈
         self.widgets = {}
         self.group_frames = {}
+        self.pages = {}
+        self._tabs = {}
+        self._step_labels = []
+        self.current_page = "design"
+        self.design_page = None
+        self.sign_page = None
         self._render_job = None
         self.preview_info = None
         self.status_left = None
         self.status_right = None
         self._build()
         self._set_sim_state(True)
+
+    def show_page(self, name):
+        """切换「印章设计 / PDF 签章」工作区，并同步 Tab 与步骤条高亮。"""
+        if name not in self.pages:
+            return
+        self.current_page = name
+        self.pages[name].tkraise()
+        for key, (lab, line) in self._tabs.items():
+            active = (key == name)
+            lab.configure(bg="#fdf0f0" if active else CARD,
+                          fg=ACCENT if active else SUBTLE,
+                          font=("微软雅黑", 10, "bold" if active else "normal"))
+            line.configure(bg=ACCENT if active else CARD)
+        for i, lab in enumerate(self._step_labels):
+            active = (i == 0 and name == "design") or (i == 1 and name == "sign")
+            lab.configure(fg=ACCENT if active else SUBTLE,
+                          font=("微软雅黑", 9, "bold" if active else "normal"))
+        if self.on_page_change:
+            self.on_page_change(name)
 
     # ── 基础构件 ──
     @staticmethod
@@ -1139,42 +1267,106 @@ class SealUI:
         main = tk.Frame(self.root, bg=BG)
         main.pack(fill=tk.BOTH, expand=True)
 
-        # 顶部标题栏
-        top = tk.Frame(main, bg=CARD, height=52)
+        # ── 顶部标题栏：品牌 + 工作区分段切换 + 免责提示 ──
+        top = tk.Frame(main, bg=CARD, height=56)
         top.pack(fill=tk.X)
         top.pack_propagate(False)
         tk.Frame(top, bg=ACCENT, width=6).pack(side=tk.LEFT, fill=tk.Y)
         tk.Label(top, text="标准电子印章生成工具", bg=CARD, fg=TEXT,
-                 font=("微软雅黑", 15, "bold")).pack(side=tk.LEFT, padx=(14, 6))
-        tk.Label(top, text="圆形章 / 椭圆形章", bg=CARD, fg=SUBTLE,
-                 font=("微软雅黑", 10)).pack(side=tk.LEFT)
+                 font=("微软雅黑", 15, "bold")).pack(side=tk.LEFT, padx=(14, 10))
+        tk.Label(top, text="生成 · 签章 一体化", bg=CARD, fg=SUBTLE,
+                 font=("微软雅黑", 10)).pack(side=tk.LEFT, padx=(0, 8))
         tk.Label(top, text=APP_VERSION, bg=CARD, fg=ACCENT,
                  font=("微软雅黑", 9, "bold")).pack(side=tk.LEFT, padx=(6, 0))
+
+        tabs = tk.Frame(top, bg=CARD)
+        tabs.pack(side=tk.LEFT, padx=(32, 0))
+        for key, text in (("design", "①  印章设计"), ("sign", "②  PDF 签章")):
+            cell = tk.Frame(tabs, bg=CARD, cursor="hand2")
+            cell.pack(side=tk.LEFT, padx=2)
+            lab = tk.Label(cell, text=text, bg=CARD, fg=SUBTLE,
+                           font=("微软雅黑", 10), padx=16, pady=8)
+            lab.pack()
+            line = tk.Frame(cell, bg=CARD, height=3)
+            line.pack(fill=tk.X)
+            line.pack_propagate(False)
+            for w in (cell, lab):
+                w.bind("<Button-1>", lambda e, k=key: self.show_page(k))
+            self._tabs[key] = (lab, line)
         tk.Label(top, text="重要提示：仅供学习参考，请勿用于非法用途，否则后果自负！",
                  bg=WARN_BG, fg=WARN_FG, font=("微软雅黑", 10, "bold"),
-                 padx=14, pady=5).pack(side=tk.RIGHT, padx=20)
+                 padx=14, pady=5).pack(side=tk.RIGHT, padx=16)
         tk.Frame(main, bg=BORDER, height=1).pack(fill=tk.X)
 
-        # 底部状态栏
+        # ── 工作流指示条：把「生成 → 签章 → 输出」的衔接显式呈现 ──
+        steps = tk.Frame(main, bg=CARD, height=36)
+        steps.pack(fill=tk.X)
+        steps.pack_propagate(False)
+        chips = tk.Frame(steps, bg=CARD)
+        chips.pack(side=tk.LEFT, padx=18)
+        for i, text in enumerate(("① 设计印章", "② 设置签章", "③ 另存成品")):
+            lab = tk.Label(chips, text=text, bg=CARD, fg=SUBTLE, font=("微软雅黑", 9))
+            lab.pack(side=tk.LEFT)
+            self._step_labels.append(lab)
+            if i < 2:
+                tk.Label(chips, text="  →  ", bg=CARD, fg="#b8c1cd",
+                         font=("微软雅黑", 9)).pack(side=tk.LEFT)
+        tk.Label(steps, text="正文文字可选中复制 · 印章实时送入签章页",
+                 bg=CARD, fg=SUBTLE, font=("微软雅黑", 8)).pack(side=tk.RIGHT, padx=18)
+        tk.Frame(main, bg=BORDER, height=1).pack(fill=tk.X)
+
+        # ── 底部状态栏 ──
         status = tk.Frame(main, bg=STATUS_BG, height=26)
         status.pack(fill=tk.X, side=tk.BOTTOM)
         status.pack_propagate(False)
-        self.status_left = tk.Label(status, text="就绪", bg=STATUS_BG, fg=STATUS_FG,
-                                    font=("微软雅黑", 9))
+        # 状态栏是正文信息区：三项均为可选中文本
+        self.status_left = SelectableLabel(status, text="就绪", bg=STATUS_BG,
+                                           fg=STATUS_FG, font=("微软雅黑", 9))
         self.status_left.pack(side=tk.LEFT, padx=12)
-        self.status_right = tk.Label(status, text="", bg=STATUS_BG, fg=STATUS_FG,
-                                     font=("微软雅黑", 9))
-        self.status_right.pack(side=tk.RIGHT, padx=12)
+        self.engine_badge = SelectableLabel(status, text=f"签章引擎  {PDF_ENGINE_NAME}",
+                                            bg=STATUS_BG, fg=STATUS_FG,
+                                            font=("微软雅黑", 8))
+        self.engine_badge.pack(side=tk.RIGHT, padx=12)
+        self.status_right = SelectableLabel(status, text="", bg=STATUS_BG,
+                                            fg=STATUS_FG, font=("微软雅黑", 9))
+        self.status_right.pack(side=tk.RIGHT, padx=(0, 18))
 
-        # 三栏布局
-        pane = tk.Frame(main, bg=BG)
-        pane.pack(fill=tk.BOTH, expand=True, padx=14, pady=12)
+        # ── 工作区：两页叠放，由顶部 Tab 切换（各自独占完整宽度） ──
+        content = tk.Frame(main, bg=BG)
+        content.pack(fill=tk.BOTH, expand=True)
+        content.rowconfigure(0, weight=1)
+        content.columnconfigure(0, weight=1)
+        self.design_page = tk.Frame(content, bg=BG)
+        self.sign_page = tk.Frame(content, bg=BG)
+        for page in (self.design_page, self.sign_page):
+            page.grid(row=0, column=0, sticky="nsew")
+        self.pages = {"design": self.design_page, "sign": self.sign_page}
+
+        # 设计页：三栏布局
+        # 全屏时三栏信息量固定，白卡片若被拉满会让内容全挤在上半、下半空成白洞。
+        # 这里让「整组卡片」按内容自然高度成为一个整体，在页面中垂直居中：
+        #   * 三栏顶部仍在同一水平线，标题基线不变；
+        #   * 卡片内控件贴顶，尺寸 / 行距 / 间距完全不随窗口变化；
+        #   * 富余高度变成上下对称的页面背景留白，视觉重心落在中部。
+        # 与「栏内内容居中」的区别：居中的是卡片整体，不是卡片里的标题，
+        # 因此不会把三栏标题推到不同高度。
+        host = tk.Frame(self.design_page, bg=BG)
+        host.pack(fill=tk.BOTH, expand=True)
+        # 面板高度必须完全由内容决定：一旦写死高度并关闭尺寸传播，
+        # 中栏参数行超过该高度就会被静默裁掉（曾导致「边框宽度 / 公司名弧度」
+        # 只露出半行）。现在保持 grid 尺寸传播，三栏取最高一栏的自然高度，
+        # 任何窗口 / 行距下都不会丢内容；整组再在页面中垂直居中，
+        # 富余高度变成上下对称留白，避免全屏时头重脚轻。
+        pane = tk.Frame(host, bg=BG)
+        pane.pack(fill=tk.X, expand=True, anchor="c", padx=14, pady=12)
         pane.columnconfigure(0, weight=10, uniform="c")
         pane.columnconfigure(1, weight=13, uniform="c")
         pane.columnconfigure(2, weight=15, uniform="c")
         pane.rowconfigure(0, weight=1)
 
         # 左栏：基础信息 + 仿真效果
+        # 内容一律贴顶、紧跟标题：三栏标题必须落在同一水平基线，
+        # 栏内居中会把标题一起推到中部，破坏并列栏的对齐关系。
         left = self._card(pane)
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 7))
         lf = tk.Frame(left, bg=CARD)
@@ -1183,47 +1375,57 @@ class SealUI:
         self._add_group(lf, "base")
         self._section(lf, "仿真效果")
         self._add_group(lf, "sim")
-        chk = ttk.Checkbutton(lf, text="启用印章仿真", command=self._on_sim_toggle)
-        chk.state(["selected"])
+        chk = BigCheckbutton(lf, text="启用印章仿真", command=self._on_sim_toggle,
+                             bg=CARD, fg=TEXT, checked=True)
         chk.pack(anchor="w", pady=(6, 0))
         self.widgets["enable_simulation"] = chk
-        tk.Label(lf, text="仿真开启后印泥更具真实盖章质感\n（防伪纹为几何特征，不受仿真开关影响）",
-                 bg=CARD, fg=SUBTLE, font=("微软雅黑", 8), justify="left").pack(anchor="w", pady=(2, 10))
+        SelectableLabel(lf, text="仿真质感：噪点 / 模糊 / 断纹（防伪纹不受开关影响）",
+                        bg=CARD, fg=SUBTLE, font=("微软雅黑", 8)).pack(
+            fill=tk.X, pady=(2, 10))
 
-        # 中栏：样式设置
+        # 中栏：样式设置（与左栏同一贴顶基线、同一内边距）
         mid = self._card(pane)
         mid.grid(row=0, column=1, sticky="nsew", padx=7)
         mf = tk.Frame(mid, bg=CARD)
         mf.pack(fill=tk.BOTH, expand=True, padx=12, pady=6)
         self._section(mf, "样式设置")
 
-        row_t = tk.Frame(mf, bg=CARD)
-        row_t.pack(fill=tk.X, pady=3)
-        tk.Label(row_t, text="章形：", bg=CARD, fg=TEXT, width=6,
-                 anchor="w", font=("微软雅黑", 9)).pack(side=tk.LEFT)
-        cb_shape = self._combo(row_t, list(SHAPE_MAP.keys()), "圆形章", 8,
+        # 两行表单共用一套 grid 列：标签列 / 控件列上下严格对齐；
+        # 「恢复默认」按钮跨两行垂直居中，不再孤零零挂在第二行末尾。
+        form = tk.Frame(mf, bg=CARD)
+        form.pack(fill=tk.X, pady=3)
+        form.columnconfigure(1, weight=1, minsize=80)
+        form.columnconfigure(3, weight=2, minsize=146)   # 容纳最长预置名，避免文字截断
+        form.columnconfigure(4, minsize=72)
+
+        def _lbl(r, c, text):
+            tk.Label(form, text=text, bg=CARD, fg=TEXT, width=4, anchor="w",
+                     font=("微软雅黑", 9)).grid(row=r, column=c, sticky="w", padx=(0, 4))
+
+        _lbl(0, 0, "章形：")
+        cb_shape = self._combo(form, list(SHAPE_MAP.keys()), "圆形章", 8,
                                lambda e: self._on_shape_change())
-        cb_shape.pack(side=tk.LEFT, padx=(0, 8))
+        cb_shape.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=2)
         self.widgets["seal_shape"] = cb_shape
-        tk.Label(row_t, text="类型：", bg=CARD, fg=TEXT, width=6,
-                 anchor="w", font=("微软雅黑", 9)).pack(side=tk.LEFT)
-        cb_type = self._combo(row_t, list(CIRCLE_PRESETS.keys()), "国有企业/股份公司", 14,
+        _lbl(0, 2, "类型：")
+        cb_type = self._combo(form, list(CIRCLE_PRESETS.keys()), "国有企业/股份公司", 16,
                               lambda e: self._apply_preset())
-        cb_type.pack(side=tk.LEFT)
+        cb_type.grid(row=0, column=3, sticky="ew", padx=(0, 10), pady=2)
         self.widgets["circle_subtype"] = cb_type
 
-        row1 = tk.Frame(mf, bg=CARD)
-        row1.pack(fill=tk.X, pady=3)
-        for label, key, options, default in [
-            ("颜色：", "seal_color_combo", list(COLORS.keys()), "红色"),
-            ("字体：", "font_family", list(FONT_MAP.keys()), "宋体"),
-        ]:
-            tk.Label(row1, text=label, bg=CARD, fg=TEXT, width=5, anchor="w",
-                     font=("微软雅黑", 9)).pack(side=tk.LEFT)
-            cb = self._combo(row1, options, default, 7, self._delay_change)
-            cb.pack(side=tk.LEFT, padx=(0, 6))
-            self.widgets[key] = cb
-        RoundedButton(row1, "恢复默认", self.on_reset, bg="#f0ad4e").pack(side=tk.RIGHT)
+        _lbl(1, 0, "颜色：")
+        cb_color = self._combo(form, list(COLORS.keys()), "红色", 8, self._delay_change)
+        cb_color.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
+        self.widgets["seal_color_combo"] = cb_color
+        _lbl(1, 2, "字体：")
+        cb_font = self._combo(form, list(FONT_MAP.keys()), "宋体", 8, self._delay_change)
+        cb_font.grid(row=1, column=3, sticky="ew", padx=(0, 10), pady=2)
+        self.widgets["font_family"] = cb_font
+
+        # 去掉孤立的橙色，回归「浅灰蓝底 + 印章红点缀」主题色系
+        RoundedButton(form, "恢复默认", self.on_reset, bg="#e8edf4", fg=TEXT,
+                      font=("微软雅黑", 9), padx=14, pady=5).grid(
+            row=0, column=4, rowspan=2, padx=(4, 0))
 
         tk.Frame(mf, bg=BORDER, height=1).pack(fill=tk.X, pady=6)
         for g in ("circle", "ellipse", "common"):
@@ -1231,22 +1433,18 @@ class SealUI:
             self.group_frames[g] = gf
             self._add_group(gf, g)
 
-        # 右栏：预览 + 下载
+        # 右栏：预览 + 导出 + 送入签章
+        # 预览框吸收栏内剩余高度并随窗口自适应放大，成为该栏视觉主体；
+        # 底部按钮组先以 side=BOTTOM 落位，预览放大后不会被挤出可视区。
         right = self._card(pane)
         right.grid(row=0, column=2, sticky="nsew", padx=(7, 0))
         rf = tk.Frame(right, bg=CARD)
         rf.pack(fill=tk.BOTH, expand=True, padx=12, pady=6)
         self._section(rf, "印章预览")
-        self.preview_frame = tk.Frame(rf, bg="#f7f9fc", width=360, height=360,
-                                      highlightbackground=BORDER, highlightthickness=1)
-        self.preview_frame.pack(pady=8)
-        self.preview_frame.pack_propagate(False)
-        self.preview_label = tk.Label(self.preview_frame, bg="#f7f9fc", text="生成中…",
-                                      fg=SUBTLE, font=("微软雅黑", 10))
-        self.preview_label.place(relx=0.5, rely=0.5, anchor="center")
-        self.preview_info = tk.Label(rf, text="", bg=CARD, fg=SUBTLE, font=("微软雅黑", 8))
-        self.preview_info.pack(pady=(0, 6))
-        RoundedButton(rf, "下载印章（透明背景 PNG）", self.on_download).pack(fill=tk.X, pady=6)
+
+        SelectableLabel(rf, text="实时同步至签章页 · 508 DPI 导出，Word/WPS 插入即真实尺寸",
+                        bg=CARD, fg=SUBTLE, font=("微软雅黑", 8), anchor="center").pack(
+            side=tk.BOTTOM, fill=tk.X, pady=(0, 4))
         if _SPONSOR_OK:
             try:
                 _show_sponsor_btn(
@@ -1256,11 +1454,27 @@ class SealUI:
                     bg="#f8fafc", fg="#94a3b8",
                     activebackground="#eef2f7", activeforeground="#64748b",
                     bd=0,
-                ).pack(pady=(0, 4))
+                ).pack(side=tk.BOTTOM, pady=(0, 2))
             except Exception:
                 pass
-        tk.Label(rf, text="导出约 508 DPI，已写入物理分辨率信息\n在 Word / WPS 中插入即为真实毫米尺寸",
-                 bg=CARD, fg=SUBTLE, font=("微软雅黑", 8), justify="center").pack()
+        RoundedButton(rf, "使用当前印章  →  去签章", self.on_goto_sign,
+                      bg="#fdeeee", fg=ACCENT, font=("微软雅黑", 10, "bold")).pack(
+            side=tk.BOTTOM, fill=tk.X, pady=(2, 6))
+        RoundedButton(rf, "下载印章（透明背景 PNG）", self.on_download).pack(
+            side=tk.BOTTOM, fill=tk.X, pady=(0, 6))
+        self.preview_info = SelectableLabel(rf, text="", bg=CARD, fg=SUBTLE,
+                                            font=("微软雅黑", 8), anchor="center")
+        self.preview_info.pack(side=tk.BOTTOM, fill=tk.X, pady=(0, 6))
+
+        self.preview_frame = tk.Frame(rf, bg="#f7f9fc",
+                                      highlightbackground=BORDER, highlightthickness=1)
+        self.preview_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+        self.preview_label = tk.Label(self.preview_frame, bg="#f7f9fc", text="生成中…",
+                                      fg=SUBTLE, font=("微软雅黑", 10))
+        self.preview_label.place(relx=0.5, rely=0.5, anchor="center")
+        self.preview_frame.bind("<Configure>", self._redraw_preview)
+
+        self.show_page("design")
 
     def _add_group(self, parent, group):
         for cfg in UI_ITEMS:
@@ -1273,7 +1487,7 @@ class SealUI:
 
     def _add_entry(self, parent, label, key):
         row = tk.Frame(parent, bg=CARD)
-        row.pack(fill=tk.X, pady=2)
+        row.pack(fill=tk.X, pady=4)
         tk.Label(row, text=label, bg=CARD, fg=TEXT, width=8, anchor="w",
                  font=("微软雅黑", 9)).pack(side=tk.LEFT)
         e = ttk.Entry(row, font=("微软雅黑", 9))
@@ -1284,7 +1498,7 @@ class SealUI:
 
     def _add_slider(self, parent, label, key, minv, maxv, step, unit=""):
         row = tk.Frame(parent, bg=CARD)
-        row.pack(fill=tk.X, pady=2)
+        row.pack(fill=tk.X, pady=5)       # 行距加大，参数区不再拥挤
         tk.Label(row, text=label, bg=CARD, fg=TEXT, width=10, anchor="w",
                  font=("微软雅黑", 9)).pack(side=tk.LEFT)
         sl = ttk.Scale(row, from_=minv, to=maxv, orient=tk.HORIZONTAL,
@@ -1485,9 +1699,23 @@ class SealUI:
     def update_preview(self, img):
         if img is None:
             return
+        self._preview_src = img.copy()
+        self._redraw_preview()
+
+    def _redraw_preview(self, _e=None):
+        """按预览框尺寸重绘，图像限幅后在框内居中。
+
+        无上限地填满会让印章放大到压过左 / 中两栏的小字控件，造成视觉失衡；
+        限幅 340px 后，浅灰预览框仍撑满可用区域保持版面饱满，印章适中居中。
+        """
+        src = getattr(self, "_preview_src", None)
+        if src is None:
+            return
         try:
-            disp = img.copy()
-            disp.thumbnail((340, 340), LANCZOS)
+            w = min(340, max(80, self.preview_frame.winfo_width() - 24))
+            h = min(340, max(80, self.preview_frame.winfo_height() - 24))
+            disp = src.copy()
+            disp.thumbnail((w, h), LANCZOS)
             self.tk_img = ImageTk.PhotoImage(disp)
             self.preview_label.config(image=self.tk_img, text="", font=("微软雅黑", 10))
         except Exception:
@@ -1495,22 +1723,23 @@ class SealUI:
 
     def show_render_error(self):
         try:
+            self._preview_src = None
             self.preview_label.config(image="", text="渲染出错，请检查参数后重试\n（详见终端日志）",
                                       fg=SUBTLE, font=("微软雅黑", 10))
-            self.preview_info.config(text="")
+            self.preview_info.set_text("")
         except Exception:
             pass
 
     def set_preview_info(self, text):
         try:
-            self.preview_info.config(text=text)
+            self.preview_info.set_text(text)
         except Exception:
             pass
 
     def set_status(self, left, right):
         try:
-            self.status_left.config(text=left)
-            self.status_right.config(text=right)
+            self.status_left.set_text(left)
+            self.status_right.set_text(right)
         except Exception:
             pass
 
@@ -1519,14 +1748,17 @@ class SealUI:
 class SealMakerApp:
     def __init__(self, root):
         self.root = root
-        root.title("标准电子印章生成工具")
+        root.title(f"标准电子印章生成工具 · PDF 签章 {APP_VERSION}")
         self._apply_window_size(root)
         self.params = dict(DEFAULT_PARAMS)
         self.engine = SealEngine(dpi=20)
         self.preview_img = None
         self._render_key = None
         self._expire_notified = False          # 过期提示每次会话只弹一次（防对话框刷屏）
-        self.ui = SealUI(root, self.render, self.download, self.reset_defaults)
+        self.ui = SealUI(root, self.render, self.download, self.reset_defaults,
+                         self.goto_sign)
+        self.stamp_ws = self._build_stamp_workspace()
+        self.ui.on_page_change = self._on_page_change
         self.ui.reset_ui(self.params)
         self._set_window_icon()
         if _is_expired():
@@ -1534,17 +1766,84 @@ class SealMakerApp:
         else:
             self.render()
 
+    # ── 签章工作台装配 ──
+    def _build_stamp_workspace(self):
+        if not _STAMP_OK or StampWorkspace is None:
+            tk.Label(self.ui.sign_page,
+                     text="签章模块未加载\n请确认 pdf_stamper.py 与 Pillow 已就绪，然后重启软件",
+                     bg=BG, fg=SUBTLE, font=("微软雅黑", 12), justify="center").pack(expand=True)
+            return None
+        theme = {"bg": BG, "card": CARD, "border": BORDER,
+                 "accent": ACCENT, "accent_dk": ACCENT_DK,
+                 "text": TEXT, "subtle": SUBTLE,
+                 "warn_bg": WARN_BG, "warn_fg": WARN_FG}
+        try:
+            ws = StampWorkspace(self.ui.sign_page, theme=theme,
+                                seal_provider=self.get_seal_for_signing,
+                                on_status=self.ui.set_status,
+                                on_go_design=self.goto_design,
+                                button_cls=RoundedButton)
+            ws.pack(fill=tk.BOTH, expand=True)
+            return ws
+        except Exception:
+            traceback.print_exc()
+            tk.Label(self.ui.sign_page,
+                     text="签章工作台初始化失败，详见终端日志\n印章生成功能不受影响",
+                     bg=BG, fg=SUBTLE, font=("微软雅黑", 12), justify="center").pack(expand=True)
+            return None
+
+    def _on_page_change(self, name):
+        if name == "sign" and self.stamp_ws is not None:
+            self.stamp_ws.on_activate()
+
+    def goto_sign(self):
+        if self.stamp_ws is None:
+            messagebox.showinfo("签章功能不可用", "签章工作台未加载，请检查 pdf_stamper.py 与依赖。")
+            return
+        self.ui.show_page("sign")
+
+    def goto_design(self):
+        self.ui.show_page("design")
+
+    def get_seal_for_signing(self):
+        """签章页的印章来源：直接返回内存中的 RGBA 印章与其物理毫米尺寸。"""
+        if self.preview_img is None:
+            return None, None
+        p = self.params
+        size = (float(p.get("circle_diameter", 42.0)) if p.get("seal_shape") == "circle"
+                else float(max(p.get("axis_a", 40.0), p.get("axis_b", 30.0))))
+        return self.preview_img, size
+
+    def _push_seal_to_sign(self):
+        """每次印章渲染完成后，把最新印章实时同步到签章工作台。"""
+        if self.stamp_ws is None:
+            return
+        try:
+            img, size = self.get_seal_for_signing()
+            self.stamp_ws.set_seal_image(img, size)
+        except Exception:
+            traceback.print_exc()
+
     @staticmethod
     def _apply_window_size(root):
-        """默认窗口 1800×880；小屏（小于该尺寸）自动收缩到屏幕内，避免窗口超出屏幕无法操作"""
+        """启动默认窗口按宽度 ×1.20、高度 ×1.30 放大，再钳制到屏幕可用范围。
+
+        以早期默认公式为基准乘系数，并取 max(旧值, 新值) 保证任何屏幕上
+        都不会比上一版更小；宽度受屏幕物理上限约束，高度增幅最明显。
+        最小尺寸随屏幕自适应，避免小屏无法缩小窗口。
+        """
         try:
             sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
         except Exception:
             sw, sh = 1440, 900
-        w = min(1800, max(1180, sw - 80))
-        h = min(880, max(680, sh - 140))
-        root.geometry(f"{int(w)}x{int(h)}")
-        root.minsize(1160, 660)
+        old_w = min(1920, max(1280, sw - 40))
+        old_h = min(920, max(700, sh - 120))
+        base_w = min(1800, max(1180, sw - 80))
+        base_h = min(880, max(680, sh - 140))
+        w = int(max(old_w, min(sw - 24, base_w * 1.20)))
+        h = int(max(old_h, min(sh - 64, base_h * 1.30)))
+        root.geometry(f"{w}x{h}")
+        root.minsize(min(1280, sw - 80), min(720, sh - 100))
 
     def _set_window_icon(self):
         try:
@@ -1607,6 +1906,7 @@ class SealMakerApp:
             self._render_key = self._param_key()
             self.ui.update_preview(self.preview_img)
             self._update_status((time.perf_counter() - t0) * 1000, self.preview_img)
+            self._push_seal_to_sign()
         except Exception:
             traceback.print_exc()
             self.ui.show_render_error()
@@ -1648,6 +1948,7 @@ class SealMakerApp:
                 self._render_key = key
                 self.ui.update_preview(self.preview_img)
                 self._update_status((time.perf_counter() - t0) * 1000, self.preview_img)
+                self._push_seal_to_sign()
             except Exception as e:
                 traceback.print_exc()
                 messagebox.showerror("导出失败", f"高清渲染出错：{e}")
@@ -1701,7 +2002,8 @@ def main():
         messagebox.showerror(
             "缺少依赖",
             "未检测到 Pillow / numpy，程序无法启动。\n\n"
-            "请先安装依赖：\n  pip install pillow numpy",
+            "请先安装依赖：\n  pip install -r requirements.txt\n\n"
+            "（PyMuPDF 仅 PDF 签章功能需要，缺失时印章生成仍可用）",
         )
         root.destroy()
         return

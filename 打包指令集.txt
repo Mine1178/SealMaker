@@ -1,0 +1,80 @@
+SealMaker v1.6.0 · 打包与分发说明
+=====================================
+
+【两个版本的区分】（功能完全一致，仅分发与系统集成方式不同）
+----------------------------------------------------------------
+同一份源码、同一个 52.6MB 自包含 exe，两个版本的差异只在"如何交给用户"：
+
+1. 免安装便携版 —— 印章大师_v1.6.0_免安装版.zip
+   · 构建配置：SealMaker_v1.6.0.spec（PyInstaller --onefile，无控制台窗口）
+   · 分发形式：zip 压缩包，内含 SealMaker_v1.6.0.exe + 使用说明.txt
+   · 运行行为：解压即用，不写入系统目录、不写注册表、不留卸载项
+   · 适用：U 盘携带、临时机器、不想安装的场景
+
+2. 标准安装版 —— 印章大师_v1.6.0_安装版.exe
+   · 构建配置：打包\SealMaker_tool.iss（Inno Setup 6），载荷即上面的 exe
+   · 分发形式：单个 Inno Setup 安装包
+   · 系统集成：开始菜单 + 桌面快捷方式 + 控制面板"程序和功能"卸载项
+   · 适用：本机长期使用、需要快捷方式 / 正常卸载
+
+说明：发布目录中另外的 SealMaker_v1.6.0.exe 就是免安装版解压后的同一文件，
+      单独列出便于直接双击运行（与 zip 内完全一致）。
+
+【各自的构建配置】
+----------------------------------------------------------------
+免安装版 / 安装版载荷（SealMaker_v1.6.0.spec）
+  · PyInstaller onefile（单文件、--windowed 无控制台）
+  · 入口脚本：SealMaker_v1.6.0.py
+  · 保留依赖：tkinter(+tcl/tk)、Pillow、numpy、PyMuPDF、共享构件 ui_widgets
+  · 排除依赖：见下方"体积精简明细"
+  · 图标：app.ico（程序 exe 图标）
+  · 字节码优化：optimize=1（去断言，不影运行）
+
+标准安装版（打包\SealMaker_tool.iss）
+  · Inno Setup 6，AppVer=1.6.0，固定 AppId 避免重复安装
+  · Source: SealMaker_v1.6.0.exe（与 iss 同目录的载荷 exe）
+  · SetupIconFile=setup.ico（16/32/48 标准小图标；原 app.ico 含 256px 压缩图
+    会触发 Inno 的 EndUpdateResource failed 110，故改用标准小图标）
+  · 安装目录默认 {localappdata}\Programs\印章大师
+
+【体积精简明细】（相对"仅排除无关重型包"基线再省约 8MB）
+----------------------------------------------------------------
+移除的冗余（已在 spec 的 _EXCLUDES 中）：
+  ❌ pymupdf.mupdf-devel        ~6.8MB  C++ 开发库(.lib/headers)，运行时零引用
+  ❌ PIL._avif + AvifImagePlugin ~7.9MB  AVIF 解码器；本软件只用 PNG/JPEG/BMP/WebP
+  ❌ PIL 稀有格式插件            ~1MB   Gif/Ico/Tiff/Psd/Pcx/Pcd… 用户印章源不涉及
+  ❌ matplotlib/scipy/pandas/PyQt/PySide/Jupyter/setuptools/pytest/测试框架/邮件/http
+                                 无关重型包与测试工具
+
+必须保留（体积主因，不可移除）：
+  ✅ PyMuPDF：mupdfcpp64.dll 26.3MB + _mupdf.pyd 13.1MB（签章核心，PDF 读写的 C 引擎）
+  ✅ NumPy：libscipy_openblas 20.4MB（设计页仿真印章噪点/模糊/断纹算法大量使用 np.*，经核实为必需）
+  ✅ Pillow 主库 / tkinter+tcl-tk（UI 与图像渲染必需）
+
+最终体积对比：
+  载荷 exe     60.5MB → 52.6MB
+  安装包       61.9MB → 53.9MB
+  免安装 zip   57.0MB → 51.8MB
+
+【打包步骤】
+----------------------------------------------------------------
+第 1 步：创建纯净虚拟环境
+    python -m venv pack_env
+第 2 步：激活
+    pack_env\Scripts\activate
+第 3 步：安装依赖
+    pip install -r requirements.txt
+第 4 步：生成免安装版载荷 exe
+    pyinstaller --clean --noconfirm SealMaker_v1.6.0.spec
+    产物：dist\SealMaker_v1.6.0.exe
+第 5 步：制作免安装版
+    把 dist\SealMaker_v1.6.0.exe 复制到「打包」与「打包\发布」，
+    连同 使用说明.txt 压缩为 印章大师_v1.6.0_免安装版.zip。
+第 6 步：制作安装版
+    确认「打包\SealMaker_tool.iss」AppVer=1.6.0，把 exe 放在同目录，执行：
+    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" 打包\SealMaker_tool.iss
+    产物：打包\Output\印章大师_安装包.exe，重命名/复制为 印章大师_v1.6.0_安装版.exe。
+第 7 步（建议）：两个版本运行验证
+    解压 zip 双击 exe、安装版静默安装后双击，确认窗口标题含 v1.6.0 且功能正常。
+
+以后迭代只需重复第 4～7 步；版本号变化时同步改 spec 的 name、iss 的 AppVer。

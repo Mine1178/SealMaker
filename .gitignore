@@ -7,3 +7,21 @@ dist/
 build/
 *.spec
 .DS_Store
+
+# 临时调试文件
+_tmp*/
+_tmp_*
+
+# 打包环境与产物
+pack_env/
+安装/
+备份/
+备份配图/
+打包/
+
+# 调试渲染输出与收款码原始素材
+smoke_out/
+assets/
+
+# 项目管理模板（非软件代码）
+templates/

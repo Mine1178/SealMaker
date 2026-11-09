@@ -1,0 +1,7 @@
+# 运行时依赖（印章渲染 + PDF 签章）
+pillow>=9.1
+numpy>=1.24
+pymupdf>=1.24
+
+# 仅打包时需要（运行时不需要）
+pyinstaller>=6.0
